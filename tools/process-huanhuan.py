@@ -28,7 +28,33 @@ INBOX = ROOT / "docs" / "import" / "inbox"
 LOG_FILE = ROOT / "tools" / "mail-process.log"
 LOCK_FILE = ROOT / "tools" / ".mail-process.lock"
 IMPORTER = ROOT / "tools" / "import-draft.py"
-MODEL = "deepseek/deepseek-flash"
+MODEL_POLICY = Path.home() / ".config" / "opencode" / "model_policy.py"
+FALLBACK_MODEL = "deepseek/deepseek-flash"
+QUOTA_RE = re.compile(r"(quota|rate.?limit|429|too many requests|free usage|limit reached|exceeded)", re.I)
+
+
+def model_candidates():
+    try:
+        out = subprocess.run(
+            [sys.executable, str(MODEL_POLICY), "--candidates"],
+            capture_output=True, text=True, timeout=20,
+        )
+        data = json.loads(out.stdout)
+        if isinstance(data, list) and data:
+            return data
+    except Exception:
+        pass
+    return [FALLBACK_MODEL]
+
+
+def mark_exhausted():
+    try:
+        subprocess.run(
+            [sys.executable, str(MODEL_POLICY), "--mark-exhausted"],
+            capture_output=True, timeout=20,
+        )
+    except Exception:
+        pass
 
 
 def log(message):
@@ -155,18 +181,34 @@ def main():
                 continue
 
             prompt = f"请读取并严格执行 {instruction_path} 里的改写任务。"
-            command = (
-                f'"{opencode}" run --auto --model {MODEL} '
-                f'--title "改写投稿 {article_id}" "{prompt}"'
-            )
             log_path = raw_path.with_name(raw_path.stem + ".opencode.log")
-            with log_path.open("a", encoding="utf-8") as out:
-                proc = subprocess.run(
-                    command, cwd=str(ROOT), shell=True,
-                    stdout=out, stderr=subprocess.STDOUT, timeout=20 * 60,
+            if out_path.exists():
+                out_path.unlink()
+            success = False
+            for model in model_candidates():
+                command = (
+                    f'"{opencode}" run --auto --model {model} '
+                    f'--title "改写投稿 {article_id}" "{prompt}"'
                 )
-            if proc.returncode != 0 or not out_path.exists():
-                log(f"改写失败：退出码 {proc.returncode}，详见 {log_path.name}")
+                log(f"使用模型：{model}")
+                with log_path.open("a", encoding="utf-8") as out:
+                    out.write(f"\n==== model {model} {datetime.now()} ====\n")
+                    out.flush()
+                    proc = subprocess.run(
+                        command, cwd=str(ROOT), shell=True,
+                        stdout=out, stderr=subprocess.STDOUT, timeout=20 * 60,
+                    )
+                if proc.returncode == 0 and out_path.exists():
+                    success = True
+                    break
+                text = log_path.read_text(encoding="utf-8", errors="ignore")[-4000:]
+                if QUOTA_RE.search(text):
+                    log("免费额度可能用完了，切换付费模型")
+                    mark_exhausted()
+                    continue
+                break
+            if not success:
+                log(f"改写失败，详见 {log_path.name}")
                 continue
 
             try:
