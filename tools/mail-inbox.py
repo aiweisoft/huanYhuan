@@ -272,8 +272,10 @@ def build_article(msg):
         "_mail": {
             "messageId": message_id,
             "from": sender,
+            "subject": subject,
             "date": date,
             "attachments": attachment_names,
+            "processed": False,
         },
     }
     return article

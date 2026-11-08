@@ -23,3 +23,7 @@ docs/import/inbox/
 # Python
 __pycache__/
 *.pyc
+
+# 投稿处理
+tools/.mail-process.lock
+tools/mail-process.log
