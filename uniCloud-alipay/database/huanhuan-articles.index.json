@@ -1,0 +1,38 @@
+[
+	{
+		"IndexName": "status_sort",
+		"MgoKeySchema": {
+			"MgoIndexKeys": [
+				{
+					"Name": "status",
+					"Direction": "1"
+				},
+				{
+					"Name": "sort",
+					"Direction": "-1"
+				},
+				{
+					"Name": "at",
+					"Direction": "-1"
+				}
+			],
+			"MgoIsUnique": false
+		}
+	},
+	{
+		"IndexName": "category_status",
+		"MgoKeySchema": {
+			"MgoIndexKeys": [
+				{
+					"Name": "category",
+					"Direction": "1"
+				},
+				{
+					"Name": "status",
+					"Direction": "1"
+				}
+			],
+			"MgoIsUnique": false
+		}
+	}
+]

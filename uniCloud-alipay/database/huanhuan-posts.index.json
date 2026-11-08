@@ -1,0 +1,34 @@
+[
+	{
+		"IndexName": "status_at",
+		"MgoKeySchema": {
+			"MgoIndexKeys": [
+				{
+					"Name": "status",
+					"Direction": "1"
+				},
+				{
+					"Name": "at",
+					"Direction": "-1"
+				}
+			],
+			"MgoIsUnique": false
+		}
+	},
+	{
+		"IndexName": "user_id_at",
+		"MgoKeySchema": {
+			"MgoIndexKeys": [
+				{
+					"Name": "user_id",
+					"Direction": "1"
+				},
+				{
+					"Name": "at",
+					"Direction": "-1"
+				}
+			],
+			"MgoIsUnique": false
+		}
+	}
+]

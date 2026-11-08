@@ -1,0 +1,80 @@
+{
+	"bsonType": "object",
+	"required": ["mood", "text", "at", "status"],
+	"permission": {
+		"read": false,
+		"create": false,
+		"update": false,
+		"delete": false
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"mood": {
+			"bsonType": "string",
+			"title": "情绪",
+			"enum": ["anxious", "low", "sleep", "friction", "social", "tired"]
+		},
+		"mood_label": {
+			"bsonType": "string",
+			"title": "自定义情绪标签（可选，最多 6 字）",
+			"maxLength": 6
+		},
+		"text": {
+			"bsonType": "string",
+			"title": "正文",
+			"maxLength": 500,
+			"trim": "both"
+		},
+		"user_id": {
+			"bsonType": "string",
+			"title": "作者（仅服务端使用，不返回客户端）",
+			"foreignKey": "uni-id-users._id"
+		},
+		"anon_id": {
+			"bsonType": "string",
+			"title": "本机匿名牌（仅服务端使用，不返回客户端）",
+			"maxLength": 64
+		},
+		"at": {
+			"bsonType": "timestamp",
+			"title": "创建时间"
+		},
+		"status": {
+			"bsonType": "string",
+			"title": "状态",
+			"enum": ["published", "reviewing", "hidden"],
+			"defaultValue": "published"
+		},
+		"hug_count": {
+			"bsonType": "int",
+			"title": "抱一下数量",
+			"defaultValue": 0
+		},
+		"echo_count": {
+			"bsonType": "int",
+			"title": "文字回应数量",
+			"defaultValue": 0
+		},
+		"report_count": {
+			"bsonType": "int",
+			"title": "举报次数",
+			"defaultValue": 0
+		},
+		"risk": {
+			"bsonType": "bool",
+			"title": "是否命中危机词（仅内部标记，不阻断发布）",
+			"defaultValue": false
+		},
+		"moderated_by": {
+			"bsonType": "string",
+			"title": "最后操作的管理员（仅供后台）",
+			"description": "审核动作执行者的 uni-id user id，用户侧永不读取"
+		},
+		"moderated_at": {
+			"bsonType": "timestamp",
+			"title": "最后审核时间"
+		}
+	}
+}

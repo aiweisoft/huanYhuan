@@ -1,0 +1,40 @@
+{
+	"bsonType": "object",
+	"required": ["post_id", "user_id", "kind", "at"],
+	"permission": {
+		"read": false,
+		"create": false,
+		"update": false,
+		"delete": false
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"post_id": {
+			"bsonType": "string",
+			"title": "帖子 ID",
+			"foreignKey": "huanhuan-posts._id"
+		},
+		"user_id": {
+			"bsonType": "string",
+			"title": "回应者（仅服务端使用）",
+			"foreignKey": "uni-id-users._id"
+		},
+		"kind": {
+			"bsonType": "string",
+			"title": "类型",
+			"enum": ["hug", "word"]
+		},
+		"text": {
+			"bsonType": "string",
+			"title": "回应内容",
+			"maxLength": 40,
+			"trim": "both"
+		},
+		"at": {
+			"bsonType": "timestamp",
+			"title": "时间"
+		}
+	}
+}

@@ -1,0 +1,199 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "树洞",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC",
+				"backgroundColorTop": "#F6F2EC",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/articles/articles",
+			"style": {
+				"navigationBarTitleText": "读一点",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/listen/listen",
+			"style": {
+				"navigationBarTitleText": "听一点",
+				"navigationBarBackgroundColor": "#26211D",
+				"navigationBarTextStyle": "white",
+				"backgroundColor": "#26211D",
+				"backgroundColorTop": "#26211D",
+				"backgroundColorBottom": "#26211D",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/mine/mine",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC",
+				"enablePullDownRefresh": false
+			}
+		},
+		{
+			"path": "pages/compose/compose",
+			"style": {
+				"navigationBarTitleText": "写下此刻",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC"
+			}
+		},
+		{
+			"path": "pages/post/post",
+			"style": {
+				"navigationBarTitleText": "单条树洞",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC"
+			}
+		},
+		{
+			"path": "pages/article/article",
+			"style": {
+				"navigationBarTitleText": "文章详情",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC"
+			}
+		},
+		{
+			"path": "pages/help/help",
+			"style": {
+				"navigationBarTitleText": "求助资源",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC"
+			}
+		},
+		{
+			"path": "pages/about/about",
+			"style": {
+				"navigationBarTitleText": "关于",
+				"navigationBarBackgroundColor": "#F6F2EC",
+				"backgroundColor": "#F6F2EC"
+			}
+		}
+	],
+	"subPackages": [
+		{
+			"root": "uni_modules/uni-id-pages/pages",
+			"pages": [
+				{
+					"path": "login/login-withoutpwd",
+					"style": {
+						"navigationBarTitleText": "登录"
+					}
+				},
+				{
+					"path": "login/login-withpwd",
+					"style": {
+						"navigationBarTitleText": "登录"
+					}
+				},
+				{
+					"path": "login/login-smscode",
+					"style": {
+						"navigationBarTitleText": "短信验证码"
+					}
+				},
+				{
+					"path": "register/register",
+					"style": {
+						"navigationBarTitleText": "注册"
+					}
+				},
+				{
+					"path": "register/register-by-email",
+					"style": {
+						"navigationBarTitleText": "邮箱注册"
+					}
+				},
+				{
+					"path": "retrieve/retrieve",
+					"style": {
+						"navigationBarTitleText": "找回密码"
+					}
+				},
+				{
+					"path": "retrieve/retrieve-by-email",
+					"style": {
+						"navigationBarTitleText": "邮箱找回密码"
+					}
+				},
+				{
+					"path": "common/webview/webview",
+					"style": {
+						"navigationBarTitleText": "协议"
+					}
+				},
+				{
+					"path": "userinfo/set-pwd/set-pwd",
+					"style": {
+						"enablePullDownRefresh": false,
+						"navigationBarTitleText": "设置密码"
+					}
+				},
+				{
+					"path": "userinfo/change_pwd/change_pwd",
+					"style": {
+						"enablePullDownRefresh": false,
+						"navigationBarTitleText": "修改密码"
+					}
+				}
+			]
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "缓一缓",
+		"navigationBarBackgroundColor": "#F6F2EC",
+		"backgroundColor": "#F6F2EC",
+		"enablePullDownRefresh": false,
+		"rpxCalcMaxDeviceWidth": 375,
+		"rpxCalcBaseDeviceWidth": 375
+	},
+	"tabBar": {
+		"color": "#6E675F",
+		"selectedColor": "#3E5B69",
+		"borderStyle": "white",
+		"backgroundColor": "#F4F0EA",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"iconPath": "/static/tabbar/hole.png",
+				"selectedIconPath": "/static/tabbar/hole-on.png",
+				"text": "树洞"
+			},
+			{
+				"pagePath": "pages/articles/articles",
+				"iconPath": "/static/tabbar/read.png",
+				"selectedIconPath": "/static/tabbar/read-on.png",
+				"text": "读一点"
+			},
+			{
+				"pagePath": "pages/listen/listen",
+				"iconPath": "/static/tabbar/ting.png",
+				"selectedIconPath": "/static/tabbar/ting-on.png",
+				"text": "听一点"
+			},
+			{
+				"pagePath": "pages/mine/mine",
+				"iconPath": "/static/tabbar/me.png",
+				"selectedIconPath": "static/tabbar/me-on.png",
+				"text": "我的"
+			}
+		]
+	},
+	"uniIdRouter": {
+		"loginPage": "uni_modules/uni-id-pages/pages/login/login-withoutpwd",
+		"needLogin": [],
+		"resToLogin": true
+	}
+}

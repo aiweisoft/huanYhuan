@@ -1,0 +1,16 @@
+# 依赖
+node_modules/
+
+# 编译输出
+unpackage/
+dist/
+
+# 本地签名证书（不要提交，务必单独备份）
+certs/
+
+# HBuilderX 本地配置
+.hbuilderx/launch.json
+
+# 系统文件
+.DS_Store
+Thumbs.db

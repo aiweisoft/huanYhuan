@@ -1,0 +1,74 @@
+{
+	"bsonType": "object",
+	"required": ["title", "category", "status"],
+	"permission": {
+		"read": false,
+		"create": false,
+		"update": false,
+		"delete": false
+	},
+	"properties": {
+		"_id": {
+			"description": "文章 ID，内置文章沿用原 id，新建由系统生成"
+		},
+		"title": {
+			"bsonType": "string",
+			"title": "标题",
+			"maxLength": 100
+		},
+		"category": {
+			"bsonType": "string",
+			"title": "分类",
+			"maxLength": 20
+		},
+		"source": {
+			"bsonType": "string",
+			"title": "来源",
+			"maxLength": 40,
+			"defaultValue": "编辑部"
+		},
+		"summary": {
+			"bsonType": "string",
+			"title": "摘要",
+			"maxLength": 200
+		},
+		"body": {
+			"bsonType": "array",
+			"title": "正文段落",
+			"description": "字符串数组，每项一段"
+		},
+		"url": {
+			"bsonType": "string",
+			"title": "原文链接",
+			"maxLength": 500
+		},
+		"minutes": {
+			"bsonType": "int",
+			"title": "预计阅读分钟数",
+			"defaultValue": 3
+		},
+		"status": {
+			"bsonType": "string",
+			"title": "状态",
+			"enum": ["published", "draft", "hidden"],
+			"defaultValue": "draft"
+		},
+		"sort": {
+			"bsonType": "int",
+			"title": "排序权重（大的在前）",
+			"defaultValue": 0
+		},
+		"at": {
+			"bsonType": "timestamp",
+			"title": "发布时间"
+		},
+		"created_at": {
+			"bsonType": "timestamp",
+			"title": "创建时间"
+		},
+		"updated_at": {
+			"bsonType": "timestamp",
+			"title": "更新时间"
+		}
+	}
+}

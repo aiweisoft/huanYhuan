@@ -1,0 +1,30 @@
+[
+	{
+		"IndexName": "post_user",
+		"MgoKeySchema": {
+			"MgoIndexKeys": [
+				{
+					"Name": "post_id",
+					"Direction": "1"
+				},
+				{
+					"Name": "user_id",
+					"Direction": "1"
+				}
+			],
+			"MgoIsUnique": true
+		}
+	},
+	{
+		"IndexName": "at",
+		"MgoKeySchema": {
+			"MgoIndexKeys": [
+				{
+					"Name": "at",
+					"Direction": "-1"
+				}
+			],
+			"MgoIsUnique": false
+		}
+	}
+]

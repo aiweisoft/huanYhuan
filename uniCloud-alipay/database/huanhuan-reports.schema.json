@@ -1,0 +1,34 @@
+{
+	"bsonType": "object",
+	"required": ["post_id", "user_id", "reason", "at"],
+	"permission": {
+		"read": false,
+		"create": false,
+		"update": false,
+		"delete": false
+	},
+	"properties": {
+		"_id": {
+			"description": "ID，系统自动生成"
+		},
+		"post_id": {
+			"bsonType": "string",
+			"title": "帖子 ID",
+			"foreignKey": "huanhuan-posts._id"
+		},
+		"user_id": {
+			"bsonType": "string",
+			"title": "举报者（仅服务端使用）",
+			"foreignKey": "uni-id-users._id"
+		},
+		"reason": {
+			"bsonType": "string",
+			"title": "举报原因",
+			"maxLength": 40
+		},
+		"at": {
+			"bsonType": "timestamp",
+			"title": "举报时间"
+		}
+	}
+}
