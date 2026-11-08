@@ -14,3 +14,12 @@ certs/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# 邮件投稿收集
+tools/.mail-import-state.json
+tools/mail-import.log
+docs/import/inbox/
+
+# Python
+__pycache__/
+*.pyc

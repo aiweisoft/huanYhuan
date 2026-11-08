@@ -40,6 +40,7 @@
 - **内容抓取**
   - `tools/rss-import.mjs` 支持 `--json`、`--feeds`
   - 预计阅读时长改为中文约 150 字/分、英文约 200 词/分，向上取整
+  - 新增邮件投稿收集：发到 sxzhizhi@163.com，本机每 10 分钟收一次，落到 `docs/import/inbox/` 草稿
   - [`docs/04-内容抓取.md`](docs/04-内容抓取.md) 增加了 2026-11-08 的实跑记录和改写示例
 
 ## 设计基线
@@ -96,7 +97,7 @@ huanYhuan/
 │  ├─ cloudfunctions/huanhuan-co/       云对象
 │  └─ database/                         集合 schema
 ├─ docs/            需求 / 设计 / 后端 / 内容抓取 / UI 规范 / 听一点改造
-└─ tools/           RSS 抓取生成文章数据
+└─ tools/           RSS 抓取、邮件投稿收集
 ```
 
 ## 本地跑起来
