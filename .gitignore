@@ -27,3 +27,7 @@ __pycache__/
 # 投稿处理
 tools/.mail-process.lock
 tools/mail-process.log
+
+# 邮箱总管
+tools/.mail-hub.lock
+tools/mail-hub.log
