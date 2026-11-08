@@ -16,6 +16,28 @@ let timerId = null
 let timerEnd = 0
 let errorNotified = false
 
+const VOLUME_KEY = 'huanhuan.volume.v1'
+
+function readVolume() {
+	try {
+		const saved = uni.getStorageSync(VOLUME_KEY)
+		if (typeof saved === 'number' && saved >= 0 && saved <= 1) return saved
+	} catch (e) {
+		// 忽略
+	}
+	return 0.8
+}
+
+function saveVolume(value) {
+	try {
+		uni.setStorageSync(VOLUME_KEY, value)
+	} catch (e) {
+		// 忽略
+	}
+}
+
+let volume = readVolume()
+
 function emit() {
 	uni.$emit('hh-audio', snapshot())
 }
@@ -26,7 +48,8 @@ export function snapshot() {
 		playing,
 		position,
 		duration: duration || (current ? current.duration : 0),
-		timerEnd
+		timerEnd,
+		volume
 	}
 }
 
@@ -46,6 +69,7 @@ function createCtx() {
 	const audio = uni.createInnerAudioContext()
 	audio.autoplay = true
 	audio.loop = true
+	audio.volume = volume
 	// #ifdef APP-PLUS
 	audio.sessionCategory = 'playback'
 	// #endif
@@ -159,6 +183,24 @@ export function stop() {
 	playing = false
 	position = 0
 	emit()
+}
+
+export function setVolume(value, persist) {
+	const next = Math.max(0, Math.min(1, Number(value) || 0))
+	volume = next
+	if (ctx) {
+		try {
+			ctx.volume = next
+		} catch (e) {
+			// 忽略
+		}
+	}
+	if (persist) saveVolume(next)
+	emit()
+}
+
+export function getVolume() {
+	return volume
 }
 
 export function setSleepTimer(minutes) {

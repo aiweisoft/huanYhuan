@@ -40,7 +40,7 @@ export const BUILTIN_AUDIO = [
 	}
 ]
 
-const SEED_KEY = 'huanhuan.builtinSeeded.v2'
+const SEED_KEY = 'huanhuan.builtinSeeded.v3'
 
 export function builtinSeeded() {
 	try {
@@ -138,7 +138,14 @@ function copyAsset(file) {
  * @returns {Promise<number>} 新增条数
  */
 export async function seedBuiltinAudio({ addTrack, hasTrack }) {
-	if (builtinSeeded()) return 0
+	const present = BUILTIN_AUDIO.filter(item => hasTrack(item.id)).length
+	if (present >= BUILTIN_AUDIO.length) {
+		markSeeded()
+		return 0
+	}
+	// 播种过、且还剩一部分：说明是用户自己移出的，不再强行加回来
+	if (builtinSeeded() && present > 0) return 0
+
 	let added = 0
 
 	for (const item of BUILTIN_AUDIO) {
@@ -147,6 +154,14 @@ export async function seedBuiltinAudio({ addTrack, hasTrack }) {
 		let path = ''
 		// #ifdef APP-PLUS
 		path = await copyAsset(item.file)
+		if (!path) {
+			// 开发基座里 assets 没有项目文件，退回 _www 下的绝对路径
+			try {
+				path = plus.io.convertLocalFileSystemURL('_www' + item.file)
+			} catch (e) {
+				path = ''
+			}
+		}
 		// #endif
 		// #ifndef APP-PLUS
 		path = item.file
@@ -165,6 +180,7 @@ export async function seedBuiltinAudio({ addTrack, hasTrack }) {
 		if (ok) added += 1
 	}
 
-	markSeeded()
+	// 一条都没加成功（多半是复制失败）时不写标记，下次进页面继续重试
+	if (added > 0) markSeeded()
 	return added
 }

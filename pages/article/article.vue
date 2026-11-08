@@ -8,12 +8,14 @@
 
 		<template v-else>
 			<view class="head">
-				<view class="category">{{ article.category }}</view>
+				<view class="head-top">
+					<view class="category">{{ article.category }}</view>
+					<view class="minutes">阅读约 {{ article.minutes || 3 }} 分钟</view>
+				</view>
 				<view class="title">{{ article.title }}</view>
 				<view class="meta">
-					<text>{{ article.source }}</text>
-					<text class="dot">·</text>
-					<text>{{ article.minutes || 3 }} 分钟</text>
+					<text class="meta-item">{{ article.source }}</text>
+					<text v-if="updatedText" class="meta-item"><text class="dot">·</text>{{ updatedText }}</text>
 				</view>
 			</view>
 
@@ -27,6 +29,7 @@
 						@click="changeFont(item.value)"
 					>{{ item.label }}</view>
 				</view>
+				<view class="speak" :class="{ active: speaking }" @click="toggleSpeak">{{ speaking ? '停止' : '朗读' }}</view>
 				<view class="save" :class="{ active: saved }" @click="toggleSave">{{ saved ? '已收藏' : '收藏' }}</view>
 			</view>
 
@@ -51,7 +54,8 @@
 	import { getArticleSync, loadArticle } from '@/common/articles.js'
 	import { ensure, isBookmarked, toggleBookmark, markRead, getFontSize, setFontSize } from '@/common/store.js'
 	import { detectCrisis } from '@/common/crisis.js'
-	import { openExternal } from '@/common/util.js'
+	import { formatDate, openExternal } from '@/common/util.js'
+	import { canSpeak, speak, stopSpeak } from '@/common/tts.js'
 
 	const FONT_MAP = {
 		small: { size: '28rpx', line: '1.8' },
@@ -67,6 +71,7 @@
 				article: null,
 				loading: true,
 				saved: false,
+				speaking: false,
 				fontSize: 'normal',
 				fontOptions: [
 					{ value: 'small', label: '小' },
@@ -76,6 +81,12 @@
 			}
 		},
 		computed: {
+			updatedText() {
+				const item = this.article
+				if (!item) return ''
+				const ts = item.updatedAt || item.at || 0
+				return ts ? '更新于 ' + formatDate(ts) : ''
+			},
 			contentSize() {
 				return (FONT_MAP[this.fontSize] || FONT_MAP.normal).size
 			},
@@ -94,6 +105,14 @@
 			if (this.article) this.applyArticle()
 			ensure()
 			this.fetchArticle()
+		},
+		onHide() {
+			stopSpeak()
+			this.speaking = false
+		},
+		onUnload() {
+			stopSpeak()
+			this.speaking = false
 		},
 		methods: {
 			async fetchArticle() {
@@ -117,6 +136,33 @@
 				this.fontSize = value
 				setFontSize(value)
 			},
+			toggleSpeak() {
+				if (this.speaking) {
+					stopSpeak()
+					this.speaking = false
+					return
+				}
+				if (!this.article) return
+				if (!canSpeak()) {
+					uni.showToast({ title: '当前环境不支持朗读', icon: 'none' })
+					return
+				}
+				const text = [this.article.title].concat(this.article.body || []).join('。')
+				const ok = speak(text, {
+					onEnd: () => {
+						this.speaking = false
+					},
+					onError: () => {
+						this.speaking = false
+						uni.showToast({ title: '朗读启动失败，检查系统语音引擎', icon: 'none' })
+					}
+				})
+				if (ok) {
+					this.speaking = true
+				} else {
+					uni.showToast({ title: '当前环境不支持朗读', icon: 'none' })
+				}
+			},
 			toggleSave() {
 				if (!this.article) return
 				this.saved = toggleBookmark(this.article.id)
@@ -138,6 +184,17 @@
 		padding: 32rpx 36rpx 100rpx;
 	}
 
+	.head-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.minutes {
+		font-size: 23rpx;
+		color: #5F5A52;
+	}
+
 	.category {
 		display: inline-block;
 		padding: 6rpx 18rpx;
@@ -157,9 +214,20 @@
 	}
 
 	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
 		margin-top: 18rpx;
 		font-size: 23rpx;
 		color: #5F5A52;
+	}
+
+	.meta text {
+		white-space: nowrap;
+	}
+
+	.meta-item {
+		white-space: nowrap;
 	}
 
 	.dot {
@@ -203,8 +271,27 @@
 		font-weight: 600;
 	}
 
-	.save {
+	.speak {
 		margin-left: auto;
+		padding: 0 24rpx;
+		height: 64rpx;
+		line-height: 62rpx;
+		border-radius: 32rpx;
+		border: 1px solid rgba(62, 91, 105, 0.4);
+		background: rgba(255, 255, 255, 0.3);
+		font-size: 25rpx;
+		color: #3E5B69;
+	}
+
+	.speak.active {
+		border-color: rgba(62, 91, 105, 0.95);
+		background: #3E5B69;
+		color: #FFFFFF;
+		font-weight: 500;
+	}
+
+	.save {
+		margin-left: 14rpx;
 		padding: 0 26rpx;
 		height: 64rpx;
 		line-height: 62rpx;

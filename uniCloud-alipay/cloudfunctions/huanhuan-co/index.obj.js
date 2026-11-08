@@ -30,9 +30,26 @@ function containsBlocked(text) {
 }
 
 function toMillis(value) {
-	if (typeof value === 'number') return value
-	if (value instanceof Date) return value.getTime()
-	return Date.now()
+	if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? value : 0
+	if (value instanceof Date) {
+		const ts = value.getTime()
+		return Number.isFinite(ts) ? ts : 0
+	}
+	if (typeof value === 'string') {
+		const num = Number(value)
+		if (Number.isFinite(num) && num > 0) return num
+		const parsed = Date.parse(value)
+		return Number.isFinite(parsed) ? parsed : 0
+	}
+	if (value && typeof value === 'object') {
+		if (typeof value.getTime === 'function') {
+			const ts = value.getTime()
+			if (Number.isFinite(ts)) return ts
+		}
+		if (value.$date !== undefined) return toMillis(value.$date)
+		if (value.value !== undefined) return toMillis(value.value)
+	}
+	return 0
 }
 
 function createError(errCode, errMsg) {
@@ -289,7 +306,7 @@ module.exports = {
 		const totalRes = await this.articles.where(query).count()
 		const res = await this.articles
 			.where(query)
-			.orderBy('sort', 'desc')
+			.orderBy('updated_at', 'desc')
 			.orderBy('at', 'desc')
 			.skip(offset)
 			.limit(size)
@@ -757,8 +774,8 @@ module.exports = {
 		const totalRes = await this.articles.where(query).count()
 		const res = await this.articles
 			.where(query)
-			.orderBy('sort', 'desc')
-			.orderBy('at', 'desc')
+			.orderBy('updated_at', 'desc')
+			.orderBy('created_at', 'desc')
 			.skip(offset)
 			.limit(size)
 			.get()

@@ -5,6 +5,8 @@
 //   node tools/rss-import.mjs                       # 读取 tools/feeds.json
 //   node tools/rss-import.mjs --dry                 # 只打印标题，不写文件
 //   node tools/rss-import.mjs --limit 10 --out tmp.json
+//   node tools/rss-import.mjs --json --out docs/import/batch.json  # 输出纯 JSON
+//   node tools/rss-import.mjs --feeds tools/feeds.example.json     # 换一个源清单
 //   node tools/rss-import.mjs --ua "Mozilla/5.0 ..." # 遇到 403 时换 UA
 //   node tools/rss-import.mjs --dry https://example.com/feed.xml
 
@@ -77,6 +79,17 @@ function pickLink(block) {
 	return href ? href[1] : ''
 }
 
+// 预计阅读时间：中文约 150 字/分，英文约 200 词/分，向上取整
+function estimateMinutes(text) {
+	const value = String(text || '')
+	const cjk = (value.match(/[\u4e00-\u9fa5]/g) || []).length
+	if (cjk > value.length * 0.2) {
+		return Math.max(1, Math.ceil(value.length / 150))
+	}
+	const words = value.trim() ? value.trim().split(/\s+/).length : 0
+	return Math.max(1, Math.ceil(words / 200))
+}
+
 function hash(value) {
 	let h = 5381
 	const text = String(value || '')
@@ -84,6 +97,12 @@ function hash(value) {
 		h = ((h << 5) + h + text.charCodeAt(i)) >>> 0
 	}
 	return h.toString(36)
+}
+
+function cutSummary(text, max = 120) {
+	const value = String(text || '').replace(/\s+/g, ' ').trim()
+	if (value.length <= max) return value
+	return value.slice(0, max).replace(/[，,、；;：:\s]+$/, '') + '…'
 }
 
 function toParagraphs(text) {
@@ -108,17 +127,16 @@ function parseFeed(xml, sourceUrl, sourceName) {
 		const dateText = stripCDATA(pick(block, ['pubDate', 'published', 'updated']))
 		const at = dateText ? Date.parse(dateText) : NaN
 		const body = toParagraphs(summary)
-		const words = body.join('').length
 		items.push({
 			id: 'rss-' + hash(link || title),
 			title,
 			category: '外部导入',
 			source: sourceName || new URL(sourceUrl).hostname,
-			summary: (summary.split('\n')[0] || title).slice(0, 120),
+			summary: cutSummary(summary.split('\n')[0] || title),
 			body: body.length ? body : [summary || title],
 			url: link || sourceUrl,
 			at: Number.isFinite(at) ? at : Date.now(),
-			minutes: Math.max(1, Math.round(words / 350)),
+			minutes: estimateMinutes(body.join('')),
 			sample: false
 		})
 	}
@@ -130,16 +148,21 @@ function toJS(items) {
 		'export default ' + JSON.stringify(items, null, '\t') + '\n'
 }
 
+function toJSON(items) {
+	return JSON.stringify(items, null, '\t') + '\n'
+}
+
 async function loadFeeds(options) {
 	if (options.urls.length) {
 		return options.urls.map(url => ({ url, name: '' }))
 	}
+	const file = options.feeds || feedsFile
 	try {
-		await access(feedsFile)
-		const raw = await readFile(feedsFile, 'utf8')
+		await access(file)
+		const raw = await readFile(file, 'utf8')
 		const json = JSON.parse(raw)
 		const list = Array.isArray(json) ? json : json.feeds
-		if (!Array.isArray(list)) throw new Error('feeds.json 必须是数组，或包含 feeds 数组')
+		if (!Array.isArray(list)) throw new Error('feeds 文件必须是数组，或包含 feeds 数组')
 		return list
 			.map(item => {
 				if (typeof item === 'string') return { url: item, name: '' }
@@ -148,7 +171,7 @@ async function loadFeeds(options) {
 			.filter(item => item.url)
 	} catch (error) {
 		if (error.code === 'ENOENT') {
-			throw new Error('没有传入 URL，且 tools/feeds.json 不存在')
+			throw new Error('没有传入 URL，且 ' + path.relative(root, file) + ' 不存在')
 		}
 		throw error
 	}
@@ -158,8 +181,10 @@ function parseArgs(argv) {
 	const options = {
 		urls: [],
 		out: outputFile,
+		feeds: '',
 		limit: 20,
 		dry: false,
+		json: false,
 		ua: 'huanhuan-rss-import/1.0 (+https://example.com)'
 	}
 	for (let i = 0; i < argv.length; i++) {
@@ -168,6 +193,10 @@ function parseArgs(argv) {
 			const value = argv[++i]
 			if (!value) throw new Error('--out 需要跟一个文件路径')
 			options.out = path.resolve(root, value)
+		} else if (arg === '--feeds') {
+			const value = argv[++i]
+			if (!value) throw new Error('--feeds 需要跟一个文件路径')
+			options.feeds = path.resolve(root, value)
 		} else if (arg === '--limit') {
 			options.limit = Math.max(1, Number(argv[++i]) || 20)
 		} else if (arg === '--ua') {
@@ -176,6 +205,8 @@ function parseArgs(argv) {
 			options.ua = value
 		} else if (arg === '--dry') {
 			options.dry = true
+		} else if (arg === '--json') {
+			options.json = true
 		} else if (!arg.startsWith('-')) {
 			options.urls.push(arg)
 		}
@@ -242,7 +273,7 @@ async function main() {
 		return
 	}
 
-	await writeFile(options.out, toJS(unique), 'utf8')
+	await writeFile(options.out, options.json ? toJSON(unique) : toJS(unique), 'utf8')
 	console.log('共写入 ' + unique.length + ' 条到 ' + path.relative(root, options.out))
 	console.log('下一步：打开这个文件，全选复制，粘贴到后台「文章管理 → 批量导入」。')
 	console.log('请人工过一遍：营销号、标题党、带诊断结论的内容一律不要上。')

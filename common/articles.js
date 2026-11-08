@@ -21,24 +21,43 @@ function withBodyFallback(list) {
 	})
 }
 
+/** 默认排序：按更新时间倒序，没有更新时间时用发布时间 */
+function sortByUpdated(list) {
+	return (Array.isArray(list) ? list.slice() : []).sort((a, b) => {
+		const left = (a && (a.updatedAt || a.at)) || 0
+		const right = (b && (b.updatedAt || b.at)) || 0
+		return right - left
+	})
+}
+
 /** 同步读取：缓存优先，其次内置 */
 export function getArticleList() {
 	const cached = getCachedArticleList()
-	return cached.length ? withBodyFallback(cached) : ARTICLES
+	return withBodyFallback(sortByUpdated(cached.length ? cached : ARTICLES))
 }
 
 /** 异步刷新：云端失败时返回当前可用列表 */
 export async function refreshArticleList(force) {
 	void force
 	try {
-		const res = await api.listArticles({ limit: 100 })
-		const list = (res && res.list) || []
-		if (list.length) {
-			setCachedArticleList(list)
-			return withBodyFallback(list)
+		// 云端单次最多 100 条，这里按 hasMore 翻页，避免文章多了以后新的被挤掉
+		const all = []
+		let skip = 0
+		for (let page = 0; page < 5; page++) {
+			const res = await api.listArticles({ limit: 100, skip })
+			const list = (res && res.list) || []
+			all.push(...list)
+			if (!res || !res.hasMore || !list.length) break
+			skip += list.length
+		}
+		if (all.length) {
+			const sorted = sortByUpdated(all)
+			setCachedArticleList(sorted)
+			return withBodyFallback(sorted)
 		}
 	} catch (error) {
 		// 离线或后端未部署：保持现有内容
+		console.warn('[articles] 云端同步失败，使用本地缓存', error)
 	}
 	return getArticleList()
 }

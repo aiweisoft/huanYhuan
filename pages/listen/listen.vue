@@ -1,6 +1,6 @@
 <template>
 	<glass-shell variant="dusk">
-	<view class="page" :class="{ 'has-player': !!current }">
+	<view class="page" :class="{ 'has-player': !!current }" @click="closeVolume">
 		<view class="intro">
 			<view class="intro-sub">从手机里挑一段声音，今晚让它替你守夜。可以一直循环，也可以定时关闭。</view>
 		</view>
@@ -24,11 +24,11 @@
 				v-for="item in locals"
 				:key="item.id"
 				class="track"
-				:class="{ active: currentId === item.id, managing, broken: item.broken }"
+				:class="{ active: currentId === item.id, playingRow: currentId === item.id && playing, managing, broken: item.broken }"
 				@click="managing ? null : select(item)"
 			>
 				<view class="track-badge" :style="{ background: badgeBg(item), color: badgeFg(item) }">
-					<view class="wave">
+					<view class="wave" :class="{ playing: currentId === item.id && playing }">
 						<view class="bar b1"></view>
 						<view class="bar b2"></view>
 						<view class="bar b3"></view>
@@ -58,10 +58,28 @@
 
 		<view class="note">自带 5 段声音首次进入时会复制一份到应用里；你添加的音频也只存在这台手机，不会上传。移出时只删应用里的副本，不动你原来的文件。切到后台可能会暂停。</view>
 
-		<view v-if="current" class="player">
+		<view v-if="current" class="player" @click.stop="closeVolume">
 			<view class="player-top">
 				<view class="player-title">{{ current.title }}</view>
+				<view class="vol-btn" :class="{ on: showVolume }" @click.stop="toggleVolume">
+					<uni-icons :type="volumePercent > 0 ? 'sound-filled' : 'sound'" size="19" color="#D8D2CB"></uni-icons>
+				</view>
 				<text class="player-timer" @click="chooseTimer">{{ timerLabel }}</text>
+
+				<view v-if="showVolume" class="vol-pop" @click.stop>
+					<view
+						class="vol-hit"
+						@touchstart.stop="onVolTouch"
+						@touchmove.stop.prevent="onVolTouch"
+						@touchend.stop="onVolTouchEnd"
+					>
+						<view class="vol-track">
+							<view class="vol-fill" :style="{ height: volumePercent + '%' }"></view>
+							<view class="vol-knob" :style="{ bottom: volumePercent + '%' }"></view>
+						</view>
+					</view>
+					<text class="vol-pop-value">{{ volumePercent }}%</text>
+				</view>
 			</view>
 
 			<slider
@@ -97,9 +115,11 @@
 	import { getLocalTracks, addTrack, hasTrack, addPickedTrack, removeTrack, findLocalTrack, refreshBrokenState, formatClock } from '@/common/listen.js'
 	import { pickAudioFile } from '@/common/file-picker.js'
 	import { seedBuiltinAudio, resetBuiltinSeed, builtinSeeded } from '@/common/audio-library.js'
-	import { playTrack, toggle, seek, stop, snapshot, setSleepTimer } from '@/common/player.js'
+	import { playTrack, toggle, seek, stop, snapshot, setSleepTimer, setVolume } from '@/common/player.js'
+	import uniIcons from '@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue'
 
 	export default {
+		components: { uniIcons },
 		data() {
 			return {
 				locals: [],
@@ -108,6 +128,9 @@
 				position: 0,
 				duration: 0,
 				timerEnd: 0,
+				volume: 0.8,
+				showVolume: false,
+				volRect: null,
 				now: Date.now(),
 				managing: false,
 				tick: null,
@@ -121,10 +144,13 @@
 			sliderValue() {
 				return Math.min(this.position, this.duration || 0)
 			},
+			volumePercent() {
+				return Math.round((Number(this.volume) || 0) * 100)
+			},
 			timerLabel() {
 				if (!this.timerEnd) return '定时'
 				const left = Math.max(0, this.timerEnd - this.now)
-				return '剩余 ' + Math.ceil(left / 60000) + ' 分钟'
+				return '剩 ' + Math.ceil(left / 60000) + ' 分'
 			}
 		},
 		onLoad() {
@@ -158,7 +184,6 @@
 				return formatClock(value)
 			},
 			ensureBuiltins() {
-				if (builtinSeeded()) return
 				seedBuiltinAudio({ addTrack, hasTrack }).then(added => {
 					this.locals = refreshBrokenState()
 					if (added) console.log('[listen] 自带音频已就绪', added)
@@ -178,6 +203,34 @@
 				this.position = state.position || 0
 				this.duration = state.duration || 0
 				this.timerEnd = state.timerEnd || 0
+				if (typeof state.volume === 'number') this.volume = state.volume
+			},
+			toggleVolume() {
+				this.showVolume = !this.showVolume
+				if (!this.showVolume) return
+				this.$nextTick(() => {
+					uni.createSelectorQuery()
+						.in(this)
+						.select('.vol-hit')
+						.boundingClientRect(rect => {
+							if (rect && rect.height) this.volRect = rect
+						})
+						.exec()
+				})
+			},
+			closeVolume() {
+				this.showVolume = false
+			},
+			onVolTouch(event) {
+				const touch = (event.touches && event.touches[0]) || (event.changedTouches && event.changedTouches[0])
+				if (!touch || !this.volRect) return
+				const ratio = 1 - (touch.clientY - this.volRect.top) / this.volRect.height
+				const value = Math.max(0, Math.min(1, ratio))
+				this.volume = value
+				setVolume(value, false)
+			},
+			onVolTouchEnd() {
+				setVolume(this.volume, true)
 			},
 			onAudioState(state) {
 				this.applyState(state)
@@ -370,6 +423,24 @@
 		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12rpx 30rpx rgba(0, 0, 0, 0.3);
 	}
 
+	.track.playingRow {
+		animation: track-glow 2.4s ease-in-out infinite;
+	}
+
+	@keyframes track-glow {
+		0%, 100% {
+			border-color: rgba(159, 181, 208, 0.42);
+			box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12rpx 30rpx rgba(0, 0, 0, 0.3);
+		}
+		50% {
+			border-color: rgba(178, 201, 230, 0.95);
+			box-shadow:
+				inset 0 1px 0 rgba(255, 255, 255, 0.24),
+				0 0 30rpx rgba(159, 181, 208, 0.38),
+				0 12rpx 30rpx rgba(0, 0, 0, 0.3);
+		}
+	}
+
 	.track.managing {
 		border-color: rgba(255, 255, 255, 0.14);
 	}
@@ -411,6 +482,32 @@
 
 	.b3 {
 		height: 24rpx;
+	}
+
+	.wave.playing .bar {
+		animation: wave-bounce 0.9s ease-in-out infinite;
+		transform-origin: bottom;
+	}
+
+	.wave.playing .b1 {
+		animation-delay: 0s;
+	}
+
+	.wave.playing .b2 {
+		animation-delay: 0.18s;
+	}
+
+	.wave.playing .b3 {
+		animation-delay: 0.36s;
+	}
+
+	@keyframes wave-bounce {
+		0%, 100% {
+			transform: scaleY(0.45);
+		}
+		50% {
+			transform: scaleY(1);
+		}
 	}
 
 	.track-main {
@@ -519,22 +616,24 @@
 	}
 
 	.player-top {
+		position: relative;
 		display: flex;
 		align-items: center;
 	}
 
 	.player-title {
+		flex: 1;
+		min-width: 0;
 		font-size: 28rpx;
 		font-weight: 600;
 		color: #F2EFEA;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		max-width: 70%;
 	}
 
 	.player-timer {
-		margin-left: auto;
+		margin-left: 14rpx;
 		padding: 10rpx 20rpx;
 		border-radius: 22rpx;
 		background: rgba(255, 255, 255, 0.08);
@@ -552,6 +651,76 @@
 		margin-top: -8rpx;
 		font-size: 20rpx;
 		color: #9B948C;
+	}
+
+	.vol-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 56rpx;
+		height: 56rpx;
+		margin-left: 16rpx;
+		border-radius: 28rpx;
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.vol-btn.on {
+		background: rgba(159, 181, 208, 0.28);
+	}
+
+	.vol-pop {
+		position: absolute;
+		right: 76rpx;
+		bottom: 72rpx;
+		z-index: 20;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		width: 96rpx;
+		padding: 18rpx 10rpx 12rpx;
+		border-radius: 24rpx;
+		background: rgba(40, 35, 31, 0.97);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.45);
+	}
+
+	.vol-hit {
+		padding: 0 18rpx;
+	}
+
+	.vol-track {
+		position: relative;
+		width: 12rpx;
+		height: 240rpx;
+		border-radius: 6rpx;
+		background: rgba(255, 255, 255, 0.16);
+	}
+
+	.vol-fill {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		border-radius: 6rpx;
+		background: #9FB5D0;
+	}
+
+	.vol-knob {
+		position: absolute;
+		left: 50%;
+		width: 28rpx;
+		height: 28rpx;
+		margin-left: -14rpx;
+		margin-bottom: -14rpx;
+		border-radius: 50%;
+		background: #EAF1F8;
+		box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.45);
+	}
+
+	.vol-pop-value {
+		margin-top: 12rpx;
+		font-size: 20rpx;
+		color: #D8D2CB;
 	}
 
 	.player-controls {

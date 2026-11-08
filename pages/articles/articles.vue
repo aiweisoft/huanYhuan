@@ -35,15 +35,17 @@
 			<view v-for="item in list" :key="item.id" class="article" hover-class="article-hover" hover-stay-time="80" @click="open(item)">
 				<view class="article-head">
 					<view class="category">{{ item.category }}</view>
-					<view class="read" v-if="readSet.includes(item.id)">已读</view>
-					<view class="saved" v-if="bookmarkSet.includes(item.id)">收藏</view>
+					<view class="head-side">
+						<view class="read" v-if="readSet.includes(item.id)">已读</view>
+						<view class="saved" v-if="bookmarkSet.includes(item.id)">收藏</view>
+						<view class="minutes">阅读约 {{ item.minutes || 3 }} 分钟</view>
+					</view>
 				</view>
 				<view class="title">{{ item.title }}</view>
 				<view class="summary">{{ item.summary }}</view>
 				<view class="meta">
-					<text>{{ item.source }}</text>
-					<text class="dot">·</text>
-					<text>{{ item.minutes || 3 }} 分钟</text>
+					<text class="meta-item">{{ item.source }}</text>
+					<text v-if="updatedText(item)" class="meta-item"><text class="dot">·</text>{{ updatedText(item) }}</text>
 				</view>
 			</view>
 
@@ -60,6 +62,7 @@
 <script>
 	import { getArticleList, refreshArticleList, articleCategories } from '@/common/articles.js'
 	import { ensure, isBookmarked, isRead } from '@/common/store.js'
+	import { formatDate } from '@/common/util.js'
 
 	export default {
 		data() {
@@ -105,6 +108,10 @@
 			})
 		},
 		methods: {
+			updatedText(item) {
+				const ts = (item && (item.updatedAt || item.at)) || 0
+				return ts ? '更新于 ' + formatDate(ts) : ''
+			},
 			async load() {
 				this.articles = getArticleList()
 				this.categories = articleCategories(this.articles)
@@ -277,14 +284,33 @@
 		color: #5F5A52;
 	}
 
-	.read {
-		margin-left: 14rpx;
+	.head-side {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
 		color: #5F5A52;
 	}
 
+	.head-side .read,
+	.head-side .saved,
+	.head-side .minutes {
+		margin-left: 14rpx;
+	}
+
+	.read {
+		padding: 2rpx 12rpx;
+		border-radius: 12rpx;
+		background: rgba(62, 91, 105, 0.14);
+		color: #3E5B69;
+		font-weight: 600;
+	}
+
 	.saved {
-		margin-left: auto;
 		color: #8A5A3C;
+	}
+
+	.minutes {
+		color: #5F5A52;
 	}
 
 	.title {
@@ -303,9 +329,20 @@
 	}
 
 	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
 		margin-top: 18rpx;
 		font-size: 23rpx;
 		color: #5F5A52;
+	}
+
+	.meta text {
+		white-space: nowrap;
+	}
+
+	.meta-item {
+		white-space: nowrap;
 	}
 
 	.dot {
