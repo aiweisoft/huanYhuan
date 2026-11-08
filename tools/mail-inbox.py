@@ -340,6 +340,12 @@ def main():
         if not any(addr in sender for addr in allow):
             continue
 
+        subject_text = clean_title(head_msg.get("Subject"))
+        # 知智快报的指令回复交给 ai-content-ops 的邮件指令脚本处理
+        if "HH" in subject_text.upper() or "知智快报" in subject_text:
+            log(f"跳过知智指令邮件：{subject_text}")
+            continue
+
         message_id = (head_msg.get("Message-ID") or "").strip()
         if message_id and message_id in state:
             continue
